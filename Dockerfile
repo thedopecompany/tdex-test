@@ -1,7 +1,7 @@
 FROM node:16-slim
 
 # Install necessary tools
-RUN apt-get update && apt-get install -y git wget netcat-traditional --no-install-recommends && \
+RUN apt-get update && apt-get install -y git wget python3 --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
@@ -39,9 +39,9 @@ sleep 10\n\
 echo "Starting TDEX daemon..."\n\
 /usr/local/bin/tdexd --network=regtest --no-backup > /app/tdexd.log 2>&1 &\n\
 \n\
-# Serve the static HTML on port 3000\n\
+# Start Python HTTP server on port 3000\n\
 echo "Starting web server..."\n\
-cd /app && while true; do { echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"; cat /app/index.html; } | nc -l -p 3000; done\n' > /app/start.sh
+cd /app && python3 -m http.server 3000\n' > /app/start.sh
 
 # Set up entry point
 ENTRYPOINT ["sh", "/app/start.sh"]
