@@ -5,10 +5,10 @@ ENV DATA_DIR=/var/data
 
 # Create a simple wrapper script to print debug info and then run the command
 USER root
-WORKDIR /home/tdex
+WORKDIR /root
 
 # Create a simple wrapper script that will print diagnostic info and then run the migration
-COPY <<EOF /home/tdex/run.sh
+COPY <<EOF /root/run.sh
 #!/bin/sh
 echo "===== ENVIRONMENT VARIABLES ====="
 env | sort
@@ -16,10 +16,13 @@ echo "===== USER INFO ====="
 whoami
 echo "===== WORKING DIRECTORY ====="
 pwd
+echo "===== DIRECTORY CHECK ====="
+mkdir -p /root/.tdex-daemon
+ls -la /root
 echo "===== RUNNING MIGRATION WITH FIXED PASSWORD ====="
-tdex-migration --password "defaultpassword" --ocean-datadir /home/tdex/.tdex-daemon/oceand
+tdex-migration --password "defaultpassword" --ocean-datadir /root/.tdex-daemon
 EOF
 
-RUN chmod +x /home/tdex/run.sh
+RUN chmod +x /root/run.sh
 
-ENTRYPOINT ["/home/tdex/run.sh"]
+ENTRYPOINT ["/root/run.sh"]
