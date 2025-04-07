@@ -14,14 +14,10 @@ RUN yarn build
 
 # Download and install oceand (latest version)
 WORKDIR /app
-RUN wget -O oceand.tar.gz https://github.com/vulpemventures/ocean/releases/download/v0.2.8/oceand_v0.2.8_linux_amd64.tar.gz
-RUN tar -xzf oceand.tar.gz
-RUN mv oceand /usr/local/bin/
+RUN wget -O /usr/local/bin/oceand https://github.com/vulpemventures/ocean/releases/download/v0.2.8/ocean-v0.2.8-linux-amd64
 
 # Download and install tdexd
-RUN wget -O tdexd.tar.gz https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdexd_1.0.0_linux_amd64.tar.gz
-RUN tar -xzf tdexd.tar.gz
-RUN mv tdexd /usr/local/bin/
+RUN wget -O /usr/local/bin/tdexd https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdex-v1.0.0-linux-amd64
 
 # Install a simple HTTP server for the dashboard
 RUN npm install -g serve
