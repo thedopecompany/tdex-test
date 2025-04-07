@@ -12,18 +12,16 @@ WORKDIR /app/dashboard
 RUN yarn install
 RUN yarn build
 
-# Download and install oceand
+# Download and install oceand (latest version)
 WORKDIR /app
-RUN wget -O oceand.tar.gz https://github.com/vulpemventures/oceand/releases/download/v0.1.6/oceand_0.1.6_linux_amd64.tar.gz
+RUN wget -O oceand.tar.gz https://github.com/vulpemventures/ocean/releases/download/v0.2.8/oceand_v0.2.8_linux_amd64.tar.gz
 RUN tar -xzf oceand.tar.gz
 RUN mv oceand /usr/local/bin/
-RUN chmod +x /usr/local/bin/oceand
 
 # Download and install tdexd
 RUN wget -O tdexd.tar.gz https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdexd_1.0.0_linux_amd64.tar.gz
 RUN tar -xzf tdexd.tar.gz
 RUN mv tdexd /usr/local/bin/
-RUN chmod +x /usr/local/bin/tdexd
 
 # Install a simple HTTP server for the dashboard
 RUN npm install -g serve
@@ -36,7 +34,7 @@ RUN echo '[supervisord]\n\
 nodaemon=true\n\
 \n\
 [program:oceand]\n\
-command=/usr/local/bin/oceand --network=regtest --datadir=/app/data --no-tls --no-profiler --db-type=badger\n\
+command=/usr/local/bin/oceand --network=regtest --datadir=/app/data --no-tls --no-profiler --db-type=badger --auto-init --auto-unlock\n\
 autostart=true\n\
 autorestart=true\n\
 stderr_logfile=/var/log/oceand.err.log\n\
