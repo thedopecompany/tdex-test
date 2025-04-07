@@ -21,24 +21,18 @@ echo "===== DIRECTORY CHECK ====="
 # Create all required directories
 mkdir -p /root/.tdex-daemon
 mkdir -p /root/.tdex-daemon/db/main
-mkdir -p /root/.tdex-daemon/oceand
 ls -la /root
 ls -la /root/.tdex-daemon
-ls -la /root/.tdex-daemon/db
 
-# Define our ocean data directory
-OCEAN_DATA_DIR="/root/.tdex-daemon/oceand"
+# Create a completely fresh directory for ocean data
+FRESH_OCEAN_DIR="/tmp/fresh_ocean_dir"
+echo "===== PREPARING FRESH DIRECTORY ====="
+rm -rf "\$FRESH_OCEAN_DIR"
+mkdir -p "\$FRESH_OCEAN_DIR"
+ls -la "\$FRESH_OCEAN_DIR"
 
-echo "===== PREPARING DIRECTORY ====="
-# Clear out any existing ocean datadir to avoid the "already existing" error
-if [ -d "\$OCEAN_DATA_DIR" ]; then
-    echo "Removing existing ocean datadir at \$OCEAN_DATA_DIR"
-    rm -rf "\$OCEAN_DATA_DIR"
-fi
-mkdir -p "\$OCEAN_DATA_DIR"
-
-echo "===== RUNNING MIGRATION WITH FIXED PASSWORD ====="
-tdex-migration --password "defaultpassword" --ocean-datadir "\$OCEAN_DATA_DIR"
+echo "===== RUNNING MIGRATION WITH FRESH DIRECTORY ====="
+tdex-migration --password "defaultpassword" --ocean-datadir "\$FRESH_OCEAN_DIR"
 EOF
 
 RUN chmod +x /root/run.sh
