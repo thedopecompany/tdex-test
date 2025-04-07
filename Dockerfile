@@ -32,11 +32,15 @@ RUN echo 'server {\n\
     server_name localhost;\n\
 \n\
     location / {\n\
-        proxy_pass http://127.0.0.1:9000;\n\
+        proxy_pass http://localhost:9000;\n\
+        proxy_http_version 1.1;\n\
+        proxy_set_header Upgrade $http_upgrade;\n\
+        proxy_set_header Connection "upgrade";\n\
         proxy_set_header Host $host;\n\
         proxy_set_header X-Real-IP $remote_addr;\n\
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
         proxy_set_header X-Forwarded-Proto $scheme;\n\
+        proxy_read_timeout 86400;\n\
     }\n\
 }\n' > /etc/nginx/conf.d/default.conf
 
@@ -49,13 +53,21 @@ echo "Starting Ocean daemon..."\n\
 echo "Waiting for Ocean daemon to start..."\n\
 sleep 10\n\
 \n\
-# Start tdexd in the background\n\
+# Start tdexd in the background with explicit bind address\n\
 echo "Starting TDEX daemon..."\n\
-/usr/local/bin/tdexd --network=regtest --no-backup > /app/tdexd.log 2>&1 &\n\
+/usr/local/bin/tdexd --network=regtest --no-backup --api.addr=0.0.0.0:9000 > /app/tdexd.log 2>&1 &\n\
 \n\
-# Start nginx reverse proxy in the background\n\
+# Wait for services to start\n\
+echo "Waiting for services to start..."\n\
+sleep 10\n\
+\n\
+# Check if something is listening on port 9000\n\
+echo "Checking port 9000..."\n\
+apt-get update && apt-get install -y net-tools && netstat -tuln | grep 9000 || echo "Nothing is listening on port 9000"\n\
+\n\
+# Start nginx reverse proxy\n\
 echo "Starting nginx reverse proxy..."\n\
-nginx -g "daemon off;" &\n\
+nginx\n\
 \n\
 # Start Python HTTP server on port 3000\n\
 echo "Starting web server on port 3000..."\n\
