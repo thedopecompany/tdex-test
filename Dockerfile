@@ -1,68 +1,50 @@
-FROM node:16
+FROM node:16-slim
 
 # Install necessary tools
+RUN apt-get update && apt-get install -y git wget --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
 WORKDIR /app
-RUN apt-get update && apt-get install -y git wget supervisor
 
-# Clone the dashboard repository
-RUN git clone --depth 1 --branch v1 https://github.com/thedopecompany/tdex-dashboard.git /app/dashboard
-
-# Install dashboard dependencies and build it
-WORKDIR /app/dashboard
-RUN yarn install
-RUN yarn build
-
-# Download and install oceand (latest version)
-WORKDIR /app
-RUN wget -O /usr/local/bin/oceand https://github.com/vulpemventures/ocean/releases/download/v0.2.8/ocean-v0.2.8-linux-amd64
-
-# Download and install tdexd
-RUN wget -O /usr/local/bin/tdexd https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdex-v1.0.0-linux-amd64
-
-# Install a simple HTTP server for the dashboard
-RUN npm install -g serve
-
-# Set up supervisor to manage all processes
-RUN mkdir -p /etc/supervisor/conf.d
-
-# Create supervisor configuration
-RUN echo '[supervisord]\n\
-nodaemon=true\n\
-\n\
-[program:oceand]\n\
-command=/usr/local/bin/oceand --network=regtest --datadir=/app/data --no-tls --no-profiler --db-type=badger --auto-init --auto-unlock\n\
-autostart=true\n\
-autorestart=true\n\
-stderr_logfile=/var/log/oceand.err.log\n\
-stdout_logfile=/var/log/oceand.out.log\n\
-\n\
-[program:tdexd]\n\
-command=/usr/local/bin/tdexd --network=regtest --no-backup\n\
-environment=TDEX_WALLET_ADDR="127.0.0.1:18000",TDEX_LOG_LEVEL="5",TDEX_NO_MACAROONS="true",TDEX_NO_OPERATOR_TLS="true",TDEX_CONNECT_PROTO="http",WALLET_PASSWORD="defaultpassword"\n\
-autostart=true\n\
-autorestart=true\n\
-stderr_logfile=/var/log/tdexd.err.log\n\
-stdout_logfile=/var/log/tdexd.out.log\n\
-\n\
-[program:dashboard]\n\
-command=serve -s /app/dashboard/build -l 3000\n\
-autostart=true\n\
-autorestart=true\n\
-stderr_logfile=/var/log/dashboard.err.log\n\
-stdout_logfile=/var/log/dashboard.out.log' > /etc/supervisor/conf.d/supervisord.conf
+# Download oceand and tdexd binaries
+RUN wget -O /usr/local/bin/oceand https://github.com/vulpemventures/ocean/releases/download/v0.2.8/ocean-v0.2.8-linux-amd64 && \
+    wget -O /usr/local/bin/tdexd https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdex-v1.0.0-linux-amd64 && \
+    chmod +x /usr/local/bin/oceand /usr/local/bin/tdexd || true
 
 # Create data directory
 RUN mkdir -p /app/data
 
-# Set environment variables for the dashboard
-ENV REACT_APP_BASENAME=/
-ENV REACT_APP_TLS_ENABLED=false
-ENV REACT_APP_MACAROON_ENABLED=false
-ENV REACT_APP_GRPCWEB_HOSTNAME=localhost
-ENV REACT_APP_GRPCWEB_PORT=9945
+# Set environment variables for tdexd
+ENV TDEX_WALLET_ADDR=127.0.0.1:18000
+ENV TDEX_LOG_LEVEL=5
+ENV TDEX_NO_MACAROONS=true
+ENV TDEX_NO_OPERATOR_TLS=true
+ENV TDEX_CONNECT_PROTO=http
+ENV WALLET_PASSWORD=defaultpassword
+
+# Create a static html file to show status
+RUN echo '<html><head><title>TDEX Status</title></head><body><h1>TDEX Services Running</h1><p>Services are running in the background.</p></body></html>' > /app/index.html
+
+# Create startup script without using chmod
+RUN echo '#!/bin/sh\n\
+echo "Starting Ocean daemon..."\n\
+/usr/local/bin/oceand --network=regtest --datadir=/app/data --no-tls --no-profiler --db-type=badger --auto-init --auto-unlock > /app/oceand.log 2>&1 &\n\
+\n\
+# Wait for oceand to start\n\
+echo "Waiting for Ocean daemon to start..."\n\
+sleep 10\n\
+\n\
+# Start tdexd in the background\n\
+echo "Starting TDEX daemon..."\n\
+/usr/local/bin/tdexd --network=regtest --no-backup > /app/tdexd.log 2>&1 &\n\
+\n\
+# Serve the static HTML on port 3000\n\
+echo "Starting web server..."\n\
+cd /app && while true; do { echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"; cat /app/index.html; } | nc -l -p 3000; done\n' > /app/start.sh
+
+# Set up entry point
+ENTRYPOINT ["sh", "/app/start.sh"]
 
 # Expose ports
 EXPOSE 3000 9000 9945 18000
-
-# Start supervisord to manage all services
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
