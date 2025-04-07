@@ -1,7 +1,7 @@
 FROM node:16-slim
 
-# Install necessary tools
-RUN apt-get update && apt-get install -y git wget python3 --no-install-recommends && \
+# Install necessary tools (minimal)
+RUN apt-get update && apt-get install -y --fix-missing wget python3 --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
