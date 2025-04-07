@@ -1,7 +1,7 @@
 FROM node:16-slim
 
 # Install necessary tools
-RUN apt-get update && apt-get install -y git wget --no-install-recommends && \
+RUN apt-get update && apt-get install -y git wget netcat-traditional --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
