@@ -17,8 +17,14 @@ whoami
 echo "===== WORKING DIRECTORY ====="
 pwd
 echo "===== DIRECTORY CHECK ====="
+
+# Create all required directories
 mkdir -p /root/.tdex-daemon
+mkdir -p /root/.tdex-daemon/db/main
+mkdir -p /root/.tdex-daemon/oceand
 ls -la /root
+ls -la /root/.tdex-daemon
+ls -la /root/.tdex-daemon/db
 
 # Define our ocean data directory
 OCEAN_DATA_DIR="/root/.tdex-daemon/oceand"
@@ -29,6 +35,7 @@ if [ -d "\$OCEAN_DATA_DIR" ]; then
     echo "Removing existing ocean datadir at \$OCEAN_DATA_DIR"
     rm -rf "\$OCEAN_DATA_DIR"
 fi
+mkdir -p "\$OCEAN_DATA_DIR"
 
 echo "===== RUNNING MIGRATION WITH FIXED PASSWORD ====="
 tdex-migration --password "defaultpassword" --ocean-datadir "\$OCEAN_DATA_DIR"
