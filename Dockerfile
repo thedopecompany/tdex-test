@@ -24,15 +24,25 @@ mkdir -p /root/.tdex-daemon/db/main
 ls -la /root
 ls -la /root/.tdex-daemon
 
-# Create a completely fresh directory for ocean data
-FRESH_OCEAN_DIR="/tmp/fresh_ocean_dir"
+# Use a unique random directory to avoid any conflicts
+FRESH_OCEAN_DIR="/tmp/ocean_\$(date +%s)_\$RANDOM"
 echo "===== PREPARING FRESH DIRECTORY ====="
-rm -rf "\$FRESH_OCEAN_DIR"
 mkdir -p "\$FRESH_OCEAN_DIR"
 ls -la "\$FRESH_OCEAN_DIR"
 
+echo "===== CHECKING TDEX-MIGRATION ====="
+which tdex-migration
+tdex-migration --help
+
 echo "===== RUNNING MIGRATION WITH FRESH DIRECTORY ====="
-tdex-migration --password "defaultpassword" --ocean-datadir "\$FRESH_OCEAN_DIR"
+# Try with additional parameters to force overwrite
+tdex-migration --password "defaultpassword" --ocean-datadir "\$FRESH_OCEAN_DIR" --force 2>&1
+
+# If that fails, try running the daemon directly
+if [ $? -ne 0 ]; then
+    echo "===== MIGRATION FAILED, TRYING DIRECT DAEMON START ====="
+    tdexd --network regtest --datadir /root/.tdex-daemon --ocean-datadir "\$FRESH_OCEAN_DIR" 2>&1
+fi
 EOF
 
 RUN chmod +x /root/run.sh
