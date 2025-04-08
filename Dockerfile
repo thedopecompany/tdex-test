@@ -1,16 +1,18 @@
 FROM node:16-slim
 
-# Install necessary tools including nginx
-RUN apt-get update && apt-get install -y git wget python3 nginx --no-install-recommends && \
+# Install necessary tools
+RUN apt-get update && apt-get install -y git wget python3 curl --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
 WORKDIR /app
 
-# Download oceand and tdexd binaries
+# Download oceand and tdexd binaries and verify they exist
 RUN wget -O /usr/local/bin/oceand https://github.com/vulpemventures/ocean/releases/download/v0.2.8/ocean-v0.2.8-linux-amd64 && \
-    wget -O /usr/local/bin/tdexd https://github.com/tdex-network/tdex-daemon/releases/download/v1.0.0/tdex-v1.0.0-linux-amd64 && \
-    chmod +x /usr/local/bin/oceand /usr/local/bin/tdexd || true
+    wget -O /usr/local/bin/tdexd https://github.com/tdex-network/tdex-daemon/releases/download/v2.1.0/tdexd-linux-amd64 && \
+    chmod +x /usr/local/bin/oceand /usr/local/bin/tdexd && \
+    ls -l /usr/local/bin/tdexd && \
+    ls -l /usr/local/bin/oceand
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -43,6 +45,10 @@ RUN echo 'server {\n\
 # Create startup script
 RUN echo '#!/bin/sh\n\
 echo "Starting Ocean daemon..."\n\
+ls -l /usr/local/bin/tdexd\n\
+echo "TDEX binary location:"\n\
+which tdexd || echo "tdexd not in PATH"\n\
+echo "Starting Ocean daemon..."\n\
 /usr/local/bin/oceand --network=regtest --datadir=/app/data --no-tls --no-profiler --db-type=badger --auto-init --auto-unlock > /app/oceand.log 2>&1 &\n\
 \n\
 # Wait for oceand to start\n\
@@ -53,11 +59,12 @@ sleep 10\n\
 echo "Starting TDEX daemon..."\n\
 /usr/local/bin/tdexd --network=regtest --no-backup --api.addr=0.0.0.0:9000 --external.addr=tdex-test-agau.onrender.com:9000 > /app/tdexd.log 2>&1 &\n\
 \n\
-# Keep container running\n\
-tail -f /app/tdexd.log\n' > /app/start.sh
+# Keep container running and show logs\n\
+tail -f /app/tdexd.log /app/oceand.log\n' > /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Set up entry point
-ENTRYPOINT ["sh", "/app/start.sh"]
+ENTRYPOINT ["/app/start.sh"]
 
 # Expose necessary ports
 EXPOSE 9000 9945 18000
